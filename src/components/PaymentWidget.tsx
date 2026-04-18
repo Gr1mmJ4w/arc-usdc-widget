@@ -15,7 +15,7 @@ const ARC_TESTNET_PARAMS = {
   chainId: ARC_CHAIN_ID,
   chainName: "Arc Testnet",
   nativeCurrency: { name: "USD Coin", symbol: "USDC", decimals: 6 },
-  rpcUrls: ["https://rpc.arc.network/testnet"],
+  rpcUrls: ["https://rpc.testnet.arc.network"],
   blockExplorerUrls: ["https://testnet.arcscan.app"],
 };
 const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
