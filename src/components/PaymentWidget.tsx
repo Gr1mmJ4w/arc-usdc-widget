@@ -10,7 +10,7 @@ type TxState =
   | { status: "success"; txHash: string; explorerUrl: string }
   | { status: "error"; message: string };
 
-const ARC_CHAIN_ID = "0x4CC442";
+const ARC_CHAIN_ID = "0x4cef52";
 const ARC_TESTNET_PARAMS = {
   chainId: ARC_CHAIN_ID,
   chainName: "Arc Testnet",
