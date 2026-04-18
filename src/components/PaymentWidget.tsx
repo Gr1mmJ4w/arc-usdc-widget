@@ -41,7 +41,7 @@ export default function PaymentWidget() {
 
   const connectWallet = useCallback(async () => {
     if (typeof window === "undefined" || !window.ethereum) {
-      setTxState({ status: "error", message: "MetaMask not found. Please install MetaMask." });
+      setTxState({ status: "error", message: "No wallet found. Install Rabby, MetaMask or any EVM wallet." });
       return;
     }
     setTxState({ status: "connecting" });
@@ -56,7 +56,7 @@ export default function PaymentWidget() {
       }
       setTxState({ status: "connected", address: accounts[0] });
     } catch {
-      setTxState({ status: "error", message: "Failed to connect wallet." });
+      setTxState({ status: "error", message: "Failed to connect. Try Rabby or MetaMask." });
     }
   }, []);
 
@@ -95,12 +95,12 @@ export default function PaymentWidget() {
       </div>
       {txState.status === "idle" && (
         <div className={styles.idleState}>
-          <p className={styles.hint}>Connect your MetaMask wallet to send USDC on Arc Testnet</p>
+          <p className={styles.hint}>Connect your wallet to send USDC on Arc Testnet</p>
           <button className={styles.btnPrimary} onClick={connectWallet}>Connect Wallet</button>
         </div>
       )}
       {txState.status === "connecting" && (
-        <div className={styles.loadingState}><div className={styles.spinner}/><p>Connecting to MetaMask...</p></div>
+        <div className={styles.loadingState}><div className={styles.spinner}/><p>Connecting wallet...</p></div>
       )}
       {txState.status === "connected" && (
         <div className={styles.formState}>
