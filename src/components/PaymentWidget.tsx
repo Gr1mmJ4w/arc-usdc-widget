@@ -41,7 +41,7 @@ export default function PaymentWidget() {
 
   const connectWallet = useCallback(async () => {
     if (typeof window === "undefined" || !window.ethereum) {
-      setTxState({ status: "error", message: "MetaMask bulunamadı. MetaMask'ı yükleyin." });
+      setTxState({ status: "error", message: "MetaMask not found. Please install MetaMask." });
       return;
     }
     setTxState({ status: "connecting" });
@@ -56,13 +56,13 @@ export default function PaymentWidget() {
       }
       setTxState({ status: "connected", address: accounts[0] });
     } catch {
-      setTxState({ status: "error", message: "Cüzdan bağlantısı başarısız." });
+      setTxState({ status: "error", message: "Failed to connect wallet." });
     }
   }, []);
 
   const sendUSDC = useCallback(async () => {
     if (txState.status !== "connected") return;
-    if (!recipient.match(/^0x[a-fA-F0-9]{40}$/)) { setRecipientError("Geçersiz adres"); return; }
+    if (!recipient.match(/^0x[a-fA-F0-9]{40}$/)) { setRecipientError("Invalid address"); return; }
     const numAmount = parseFloat(amount);
     if (!amount || isNaN(numAmount) || numAmount <= 0) return;
     setRecipientError("");
@@ -78,7 +78,7 @@ export default function PaymentWidget() {
     } catch (err: unknown) {
       const e = err as { code?: number; message?: string };
       if (e.code === 4001) { setTxState({ status: "connected", address: (txState as { address: string }).address }); }
-      else { setTxState({ status: "error", message: e.message || "İşlem başarısız." }); }
+      else { setTxState({ status: "error", message: e.message || "Transaction failed." }); }
     }
   }, [txState, recipient, amount]);
 
@@ -95,12 +95,12 @@ export default function PaymentWidget() {
       </div>
       {txState.status === "idle" && (
         <div className={styles.idleState}>
-          <p className={styles.hint}>MetaMask cüzdanını bağla ve Arc Testnet üzerinde USDC gönder</p>
+          <p className={styles.hint}>Connect your MetaMask wallet to send USDC on Arc Testnet</p>
           <button className={styles.btnPrimary} onClick={connectWallet}>Connect Wallet</button>
         </div>
       )}
       {txState.status === "connecting" && (
-        <div className={styles.loadingState}><div className={styles.spinner}/><p>MetaMask'a bağlanıyor...</p></div>
+        <div className={styles.loadingState}><div className={styles.spinner}/><p>Connecting to MetaMask...</p></div>
       )}
       {txState.status === "connected" && (
         <div className={styles.formState}>
@@ -116,27 +116,27 @@ export default function PaymentWidget() {
               <div className={styles.amountSuffix}><USDCIcon/></div>
             </div>
           </div>
-          <div className={styles.gasNote}><span className={styles.gasDot}/><span>~$0.009 gas · USDC ile ödenir · Arc Testnet</span></div>
+          <div className={styles.gasNote}><span className={styles.gasDot}/><span>~$0.009 gas · paid in USDC · Arc Testnet</span></div>
           <button className={styles.btnPrimary} onClick={sendUSDC} disabled={!recipient || !amount || parseFloat(amount) <= 0}>Send USDC</button>
         </div>
       )}
       {txState.status === "sending" && (
-        <div className={styles.loadingState}><div className={styles.spinner}/><p>İşlem gönderiliyor...</p><span className={styles.subtext}>MetaMask'ta onayla</span></div>
+        <div className={styles.loadingState}><div className={styles.spinner}/><p>Broadcasting transaction...</p><span className={styles.subtext}>Confirm in MetaMask</span></div>
       )}
       {txState.status === "success" && (
         <div className={styles.successState}>
           <div className={styles.successIcon}>✓</div>
-          <p className={styles.successTitle}>İşlem Gönderildi</p>
+          <p className={styles.successTitle}>Transaction Sent</p>
           <p className={styles.txHash}>{txState.txHash.slice(0,20)}...{txState.txHash.slice(-8)}</p>
-          <a href={txState.explorerUrl} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>ArcScan'da Gör ↗</a>
-          <button className={styles.btnSecondary} onClick={reset}>Yeni İşlem</button>
+          <a href={txState.explorerUrl} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>View on ArcScan ↗</a>
+          <button className={styles.btnSecondary} onClick={reset}>New Transaction</button>
         </div>
       )}
       {txState.status === "error" && (
         <div className={styles.errorState}>
-          <p className={styles.errorTitle}>Hata</p>
+          <p className={styles.errorTitle}>Something went wrong</p>
           <p className={styles.errorMsg}>{txState.message}</p>
-          <button className={styles.btnSecondary} onClick={reset}>Tekrar Dene</button>
+          <button className={styles.btnSecondary} onClick={reset}>Try Again</button>
         </div>
       )}
     </div>
