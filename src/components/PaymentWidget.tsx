@@ -10,14 +10,14 @@ type TxState =
   | { status: "success"; txHash: string; explorerUrl: string }
   | { status: "error"; message: string };
 
-const ARC_TESTNET = {
-  chainId: "0x4CC442",
+const ARC_CHAIN_ID = "0x4CC442";
+const ARC_TESTNET_PARAMS = {
+  chainId: ARC_CHAIN_ID,
   chainName: "Arc Testnet",
   nativeCurrency: { name: "USD Coin", symbol: "USDC", decimals: 6 },
   rpcUrls: ["https://rpc.arc.network/testnet"],
   blockExplorerUrls: ["https://testnet.arcscan.app"],
 };
-
 const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 
 function shortenAddress(addr: string) {
@@ -33,6 +33,29 @@ function USDCIcon() {
   );
 }
 
+async function ensureArcNetwork(ethereum: NonNullable<Window["ethereum"]>): Promise<void> {
+  try {
+    const chainId = await ethereum.request({ method: "eth_chainId" }) as string;
+    if (chainId === ARC_CHAIN_ID) return;
+  } catch {}
+
+  try {
+    await ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: ARC_CHAIN_ID }],
+    });
+    return;
+  } catch (err: unknown) {
+    const e = err as { code?: number };
+    if (e.code !== 4902 && e.code !== -32603) throw err;
+  }
+
+  await ethereum.request({
+    method: "wallet_addEthereumChain",
+    params: [ARC_TESTNET_PARAMS],
+  });
+}
+
 export default function PaymentWidget() {
   const [txState, setTxState] = useState<TxState>({ status: "idle" });
   const [recipient, setRecipient] = useState("");
@@ -41,22 +64,21 @@ export default function PaymentWidget() {
 
   const connectWallet = useCallback(async () => {
     if (typeof window === "undefined" || !window.ethereum) {
-      setTxState({ status: "error", message: "No wallet found. Install Rabby, MetaMask or any EVM wallet." });
+      setTxState({ status: "error", message: "No wallet found. Install Rabby or MetaMask." });
       return;
     }
     setTxState({ status: "connecting" });
     try {
       const accounts = (await window.ethereum.request({ method: "eth_requestAccounts" })) as string[];
-      try {
-        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_TESTNET.chainId }] });
-      } catch (switchError: unknown) {
-        if ((switchError as { code: number }).code === 4902) {
-          await window.ethereum.request({ method: "wallet_addEthereumChain", params: [ARC_TESTNET] });
-        } else { throw switchError; }
-      }
+      await ensureArcNetwork(window.ethereum);
       setTxState({ status: "connected", address: accounts[0] });
-    } catch {
-      setTxState({ status: "error", message: "Failed to connect. Try Rabby or MetaMask." });
+    } catch (err: unknown) {
+      const e = err as { code?: number; message?: string };
+      if (e.code === 4001) {
+        setTxState({ status: "idle" });
+      } else {
+        setTxState({ status: "error", message: e.message || "Failed to connect wallet." });
+      }
     }
   }, []);
 
@@ -68,6 +90,7 @@ export default function PaymentWidget() {
     setRecipientError("");
     setTxState({ status: "sending" });
     try {
+      await ensureArcNetwork(window.ethereum!);
       const amountInMicro = BigInt(Math.round(numAmount * 1_000_000));
       const data = "0xa9059cbb" + recipient.slice(2).padStart(64, "0") + amountInMicro.toString(16).padStart(64, "0");
       const txHash = (await window.ethereum!.request({
@@ -121,7 +144,7 @@ export default function PaymentWidget() {
         </div>
       )}
       {txState.status === "sending" && (
-        <div className={styles.loadingState}><div className={styles.spinner}/><p>Broadcasting transaction...</p><span className={styles.subtext}>Confirm in MetaMask</span></div>
+        <div className={styles.loadingState}><div className={styles.spinner}/><p>Broadcasting transaction...</p><span className={styles.subtext}>Confirm in your wallet</span></div>
       )}
       {txState.status === "success" && (
         <div className={styles.successState}>
